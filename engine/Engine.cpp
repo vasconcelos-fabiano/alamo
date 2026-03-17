@@ -1,3 +1,4 @@
+#include "Layout.h"
 #include "Engine.h"
 #include <iostream>
 #include <thread>
@@ -6,6 +7,26 @@
 void Engine::run() {
 
     std::cout << "Alamo Engine started." << std::endl;
+
+    Layout layout = createLayout(2340, 1080);
+
+std::cout << "LeftPanel: "
+          << layout.leftPanel.x << ", "
+          << layout.leftPanel.y << ", "
+          << layout.leftPanel.width << ", "
+          << layout.leftPanel.height << std::endl;
+
+std::cout << "GameViewport: "
+          << layout.gameViewport.x << ", "
+          << layout.gameViewport.y << ", "
+          << layout.gameViewport.width << ", "
+          << layout.gameViewport.height << std::endl;
+
+std::cout << "RightPanel: "
+          << layout.rightPanel.x << ", "
+          << layout.rightPanel.y << ", "
+          << layout.rightPanel.width << ", "
+          << layout.rightPanel.height << std::endl;
 
     while (true) {
 

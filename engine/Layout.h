@@ -21,4 +21,6 @@ struct Layout {
     Rect rightPanel;
 };
 
+Layout createLayout(int screenWidth, int screenHeight);
+
 #endif
