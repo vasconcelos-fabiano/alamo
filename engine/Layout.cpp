@@ -7,30 +7,38 @@ Layout createLayout(int screenWidth, int screenHeight)
     layout.screenWidth = screenWidth;
     layout.screenHeight = screenHeight;
 
-    layout.leftPanelWidth = screenWidth * 0.15;
-    layout.rightPanelWidth = screenWidth * 0.15;
-    layout.gameViewportWidth = screenWidth * 0.70;
+    // proporção fixa 16:9
+    float targetRatio = 16.0f / 9.0f;
 
-    layout.leftPanel = {
-        0,
-        0,
-        layout.leftPanelWidth,
-        screenHeight
-    };
+    int viewportWidth = screenWidth;
+    int viewportHeight = screenWidth / targetRatio;
 
-    layout.gameViewport = {
-        layout.leftPanelWidth,
-        0,
-        layout.gameViewportWidth,
-        screenHeight
-    };
+    if (viewportHeight > screenHeight)
+    {
+        viewportHeight = screenHeight;
+        viewportWidth = screenHeight * targetRatio;
+    }
 
-    layout.rightPanel = {
-        layout.leftPanelWidth + layout.gameViewportWidth,
-        0,
-        layout.rightPanelWidth,
-        screenHeight
-    };
+    int viewportX = (screenWidth - viewportWidth) / 2;
+    int viewportY = (screenHeight - viewportHeight) / 2;
+
+    // viewport do jogo
+    layout.gameViewport.x = viewportX;
+    layout.gameViewport.y = viewportY;
+    layout.gameViewport.w = viewportWidth;
+    layout.gameViewport.h = viewportHeight;
+
+    // painel esquerdo (tudo que sobra à esquerda)
+    layout.leftPanel.x = 0;
+    layout.leftPanel.y = 0;
+    layout.leftPanel.w = viewportX;
+    layout.leftPanel.h = screenHeight;
+
+    // painel direito (tudo que sobra à direita)
+    layout.rightPanel.x = viewportX + viewportWidth;
+    layout.rightPanel.y = 0;
+    layout.rightPanel.w = screenWidth - (viewportX + viewportWidth);
+    layout.rightPanel.h = screenHeight;
 
     return layout;
 }

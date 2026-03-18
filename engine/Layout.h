@@ -1,14 +1,16 @@
 #ifndef ALAMO_LAYOUT_H
 #define ALAMO_LAYOUT_H
 
-struct Rect {
+struct Rect
+{
     int x;
     int y;
-    int width;
-    int height;
+    int w;
+    int h;
 };
 
-struct Layout {
+struct Layout
+{
     int screenWidth;
     int screenHeight;
 
