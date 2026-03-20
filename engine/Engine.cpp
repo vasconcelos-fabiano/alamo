@@ -44,6 +44,22 @@ void Engine::run()
         return;
     }
 
+    if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG))
+    {
+        std::cout << "Erro SDL_image: " << IMG_GetError() << std::endl;
+    }
+
+    SDL_Surface *surface = IMG_Load("assets/logo-alamo-arcade.png");
+    if (!surface)
+    {
+        std::cout << "Erro ao carregar logo: " << IMG_GetError() << std::endl;
+    }
+    else
+    {
+        logoTexture = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+    }
+
     font = TTF_OpenFont("/System/Library/Fonts/SFNSMono.ttf", 28);
 
     if (!font)
@@ -88,6 +104,25 @@ void Engine::input()
 
         if (event.type == SDL_KEYDOWN)
         {
+            if (event.key.keysym.sym == SDLK_f)
+            {
+                Uint32 flags = SDL_GetWindowFlags(window);
+
+                if (flags & SDL_WINDOW_FULLSCREEN_DESKTOP)
+                {
+                    SDL_SetWindowFullscreen(window, 0);
+                }
+                else
+                {
+                    SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                }
+
+                int width = 0;
+                int height = 0;
+                SDL_GetRendererOutputSize(renderer, &width, &height);
+                layout = createLayout(width, height);
+            }
+            
             if (event.key.keysym.sym == SDLK_ESCAPE)
             {
                 running = false;
@@ -170,6 +205,21 @@ void Engine::render()
     SDL_SetRenderDrawColor(renderer, 110, 110, 140, 255);
     SDL_RenderDrawRect(renderer, &innerBorder);
 
+    if (logoTexture)
+    {
+        int logoW, logoH;
+        SDL_QueryTexture(logoTexture, NULL, NULL, &logoW, &logoH);
+
+        int targetW = 360;
+        int targetH = (logoH * targetW) / logoW;
+
+        int x = layout.gameViewport.x + (layout.gameViewport.w - targetW) / 2;
+        int y = layout.gameViewport.y + 40;
+
+        SDL_Rect dst = {x, y, targetW, targetH};
+        SDL_RenderCopy(renderer, logoTexture, NULL, &dst);
+    }
+
     if (currentScreen == ScreenState::MENU)
     {
         renderMenu();
@@ -191,7 +241,6 @@ void Engine::renderMenu()
     int centerY = layout.gameViewport.y + layout.gameViewport.h / 2;
 
     // offsets verticais do menu
-    int titleY = layout.gameViewport.y + 60;
     int item1Y = centerY;
     int item2Y = centerY + 50;
 
@@ -203,40 +252,40 @@ void Engine::renderMenu()
 
     drawText(">", centerX - cursorOffset, cursorY, selectedColor);
 
-    drawText("Alamo Arcade", centerX - textOffset, titleY, selectedColor);
+    // drawText("Alamo Arcade", centerX - textOffset, titleY, selectedColor);
     drawText("Game List", centerX - textOffset, item1Y, selectedMenuIndex == 0 ? selectedColor : normalColor);
     drawText("Exit", centerX - textOffset, item2Y, selectedMenuIndex == 1 ? selectedColor : normalColor);
 }
 
-    void Engine::renderGame()
+void Engine::renderGame()
+{
+    SDL_Color color = {220, 220, 220, 255};
+
+    int x = layout.gameViewport.x + 80;
+    int y = layout.gameViewport.y + 200;
+
+    drawText("GAME SCREEN", x, y, color);
+    drawText("Press BACKSPACE to return", x, y + 60, color);
+}
+
+void Engine::drawText(const char *text, int x, int y, SDL_Color color)
+{
+    SDL_Surface *surface = TTF_RenderUTF8_Blended(font, text, color);
+    if (!surface)
     {
-        SDL_Color color = {220, 220, 220, 255};
-
-        int x = layout.gameViewport.x + 80;
-        int y = layout.gameViewport.y + 80;
-
-        drawText("GAME SCREEN", x, y, color);
-        drawText("Press BACKSPACE to return", x, y + 60, color);
+        return;
     }
 
-    void Engine::drawText(const char *text, int x, int y, SDL_Color color)
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+    if (!texture)
     {
-        SDL_Surface *surface = TTF_RenderUTF8_Blended(font, text, color);
-        if (!surface)
-        {
-            return;
-        }
-
-        SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-        if (!texture)
-        {
-            SDL_FreeSurface(surface);
-            return;
-        }
-
-        SDL_Rect dst = {x, y, surface->w, surface->h};
-
         SDL_FreeSurface(surface);
-        SDL_RenderCopy(renderer, texture, nullptr, &dst);
-        SDL_DestroyTexture(texture);
+        return;
     }
+
+    SDL_Rect dst = {x, y, surface->w, surface->h};
+
+    SDL_FreeSurface(surface);
+    SDL_RenderCopy(renderer, texture, nullptr, &dst);
+    SDL_DestroyTexture(texture);
+}
