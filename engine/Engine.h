@@ -9,7 +9,8 @@
 enum class ScreenState
 {
     MENU,
-    GAME
+    GAME,
+    INPUT_TEST
 };
 
 class Engine
@@ -25,6 +26,16 @@ private:
 
     bool running = true;
     int selectedMenuIndex = 0;
+    bool upPressed = false;
+    bool downPressed = false;
+    bool leftPressed = false;
+    bool rightPressed = false;
+    bool aPressed = false;
+    bool bPressed = false;
+    bool cPressed = false;
+    bool startPressed = false;
+    bool savePressed = false;
+    bool resetPressed = false;
 
     Layout layout;
     ScreenState currentScreen = ScreenState::MENU;
@@ -36,6 +47,7 @@ private:
     void renderMenu();
     void renderGame();
     void drawText(const char *text, int x, int y, SDL_Color color);
+    void renderInputTest();
 };
 
 #endif

@@ -97,79 +97,118 @@ void Engine::input()
 
     while (SDL_PollEvent(&event))
     {
-        if (event.type == SDL_QUIT)
+        switch (event.type)
         {
+        case SDL_QUIT:
             running = false;
-        }
+            break;
 
-        if (event.type == SDL_KEYDOWN)
-        {
-            if (event.key.keysym.sym == SDLK_f)
+        case SDL_KEYDOWN:
+            switch (event.key.keysym.sym)
+            {
+            case SDLK_f:
             {
                 Uint32 flags = SDL_GetWindowFlags(window);
 
                 if (flags & SDL_WINDOW_FULLSCREEN_DESKTOP)
-                {
                     SDL_SetWindowFullscreen(window, 0);
-                }
                 else
-                {
                     SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
-                }
 
                 int width = 0;
                 int height = 0;
                 SDL_GetRendererOutputSize(renderer, &width, &height);
                 layout = createLayout(width, height);
+                break;
             }
-            
-            if (event.key.keysym.sym == SDLK_ESCAPE)
-            {
+
+            case SDLK_ESCAPE:
                 running = false;
-            }
+                break;
 
-            if (currentScreen == ScreenState::MENU)
-            {
-                if (event.key.keysym.sym == SDLK_UP)
-                {
-                    if (selectedMenuIndex > 0)
-                    {
-                        selectedMenuIndex--;
-                    }
-                }
+            case SDLK_UP:
+                upPressed = true;
 
-                if (event.key.keysym.sym == SDLK_DOWN)
-                {
-                    if (selectedMenuIndex < 1)
-                    {
-                        selectedMenuIndex++;
-                    }
-                }
+                if (currentScreen == ScreenState::MENU && selectedMenuIndex > 0)
+                    selectedMenuIndex--;
 
-                if (event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_KP_ENTER)
+                break;
+
+            case SDLK_DOWN:
+                downPressed = true;
+
+                if (currentScreen == ScreenState::MENU && selectedMenuIndex < 2)
+                    selectedMenuIndex++;
+
+                break;
+
+            case SDLK_LEFT:
+                leftPressed = true;
+
+                if (currentScreen == ScreenState::MENU && selectedMenuIndex < 2)
+                    selectedMenuIndex++;
+
+                break;
+
+            case SDLK_RIGHT:
+                rightPressed = true;
+
+                if (currentScreen == ScreenState::MENU && selectedMenuIndex < 2)
+                    selectedMenuIndex++;
+
+                break;
+
+            case SDLK_RETURN:
+            case SDLK_KP_ENTER:
+                if (currentScreen == ScreenState::MENU)
                 {
-                    if (selectedMenuIndex == 0)
+                    switch (selectedMenuIndex)
                     {
+                    case 0:
                         currentScreen = ScreenState::GAME;
-                    }
-                    else if (selectedMenuIndex == 1)
-                    {
+                        break;
+                    case 1:
+                        currentScreen = ScreenState::INPUT_TEST;
+                        break;
+                    case 2:
                         running = false;
+                        break;
                     }
                 }
-            }
-            else if (currentScreen == ScreenState::GAME)
-            {
-                if (event.key.keysym.sym == SDLK_BACKSPACE)
-                {
-                    currentScreen = ScreenState::MENU;
-                }
-            }
-        }
+                break;
 
-        if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
-        {
-            layout = createLayout(event.window.data1, event.window.data2);
+            case SDLK_BACKSPACE:
+                if (currentScreen == ScreenState::GAME)
+                    currentScreen = ScreenState::MENU;
+                break;
+            }
+            break;
+
+        case SDL_KEYUP:
+            switch (event.key.keysym.sym)
+            {
+            case SDLK_UP:
+                upPressed = false;
+                break;
+
+            case SDLK_DOWN:
+                downPressed = false;
+                break;
+
+            case SDLK_LEFT:
+                leftPressed = false;
+                break;
+
+            case SDLK_RIGHT:
+                rightPressed = false;
+                break;
+            }
+            break;
+
+        case SDL_WINDOWEVENT:
+            if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+                layout = createLayout(event.window.data1, event.window.data2);
+            break;
         }
     }
 }
@@ -229,6 +268,11 @@ void Engine::render()
         renderGame();
     }
 
+    else if (currentScreen == ScreenState::INPUT_TEST)
+    {
+        renderInputTest();
+    }
+
     SDL_RenderPresent(renderer);
 }
 
@@ -243,18 +287,27 @@ void Engine::renderMenu()
     // offsets verticais do menu
     int item1Y = centerY;
     int item2Y = centerY + 50;
+    int item3Y = centerY + 100;
 
     // centralizar aproximado (ajuste fino depois)
     int textOffset = 100;
     int cursorOffset = 140;
 
-    int cursorY = (selectedMenuIndex == 0) ? item1Y : item2Y;
+    int cursorY;
+
+    if (selectedMenuIndex == 0)
+        cursorY = item1Y;
+    else if (selectedMenuIndex == 1)
+        cursorY = item2Y;
+    else
+        cursorY = item3Y;
 
     drawText(">", centerX - cursorOffset, cursorY, selectedColor);
 
     // drawText("Alamo Arcade", centerX - textOffset, titleY, selectedColor);
     drawText("Game List", centerX - textOffset, item1Y, selectedMenuIndex == 0 ? selectedColor : normalColor);
-    drawText("Exit", centerX - textOffset, item2Y, selectedMenuIndex == 1 ? selectedColor : normalColor);
+    drawText("Input Test", centerX - textOffset, item2Y, selectedMenuIndex == 1 ? selectedColor : normalColor);
+    drawText("Exit", centerX - textOffset, item3Y, selectedMenuIndex == 2 ? selectedColor : normalColor);
 }
 
 void Engine::renderGame()
@@ -288,4 +341,82 @@ void Engine::drawText(const char *text, int x, int y, SDL_Color color)
     SDL_FreeSurface(surface);
     SDL_RenderCopy(renderer, texture, nullptr, &dst);
     SDL_DestroyTexture(texture);
+}
+
+void Engine::renderInputTest()
+{
+    int baseX = layout.gameViewport.x;
+    int baseY = layout.gameViewport.y;
+    int w = layout.gameViewport.w;
+    int h = layout.gameViewport.h;
+
+    // === DIRECIONAL (ESQUERDA) ===
+    int dpadX = baseX + 50;
+    int dpadY = baseY + h - 200;
+
+    SDL_Rect up = {dpadX + 40, dpadY, 40, 40};
+    SDL_Rect down = {dpadX + 40, dpadY + 80, 40, 40};
+    SDL_Rect left = {dpadX, dpadY + 40, 40, 40};
+    SDL_Rect right = {dpadX + 80, dpadY + 40, 40, 40};
+
+    // UP
+    if (upPressed)
+        SDL_SetRenderDrawColor(renderer, 255, 220, 120, 255);
+    else
+        SDL_SetRenderDrawColor(renderer, 80, 80, 100, 255);
+
+    SDL_RenderFillRect(renderer, &up);
+
+    // DOWN
+    if (downPressed)
+        SDL_SetRenderDrawColor(renderer, 255, 220, 120, 255);
+    else
+        SDL_SetRenderDrawColor(renderer, 80, 80, 100, 255);
+
+    SDL_RenderFillRect(renderer, &down);
+
+    // LEFT
+    if (leftPressed)
+        SDL_SetRenderDrawColor(renderer, 255, 220, 120, 255);
+    else
+        SDL_SetRenderDrawColor(renderer, 80, 80, 100, 255);
+
+    SDL_RenderFillRect(renderer, &left);
+
+    // RIGHT
+    if (rightPressed)
+        SDL_SetRenderDrawColor(renderer, 255, 220, 120, 255);
+    else
+        SDL_SetRenderDrawColor(renderer, 80, 80, 100, 255);
+
+    SDL_RenderFillRect(renderer, &right);
+
+    // === BOTÕES ABC (DIREITA) ===
+    int btnX = baseX + w - 150;
+    int btnY = baseY + h - 200;
+
+    SDL_Rect A = {btnX, btnY, 50, 50};
+    SDL_Rect B = {btnX - 60, btnY + 60, 50, 50};
+    SDL_Rect C = {btnX + 60, btnY + 60, 50, 50};
+
+    SDL_SetRenderDrawColor(renderer, 80, 80, 100, 255);
+    SDL_RenderFillRect(renderer, &A);
+    SDL_RenderFillRect(renderer, &B);
+    SDL_RenderFillRect(renderer, &C);
+
+    // === START / SAVE ===
+    SDL_Rect start = {baseX + w - 180, baseY + 50, 60, 30};
+    SDL_Rect save = {baseX + w - 100, baseY + 50, 60, 30};
+
+    SDL_SetRenderDrawColor(renderer, 80, 80, 100, 255);
+    SDL_RenderFillRect(renderer, &start);
+    SDL_RenderFillRect(renderer, &save);
+
+    // === RESET ===
+    SDL_Rect reset = {baseX + 50, baseY + 50, 80, 30};
+
+    SDL_RenderFillRect(renderer, &reset);
+
+    // === TÍTULO ===
+    drawText("INPUT TEST", baseX + 50, baseY + 20, {255, 255, 255, 255});
 }
